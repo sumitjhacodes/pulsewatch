@@ -1,0 +1,1 @@
+## Turborepo (turbo) is a high-performance build system and task runner built specifically for JavaScript and TypeScript monorepos. While pnpm manages installing and linking your dependencies, turbo orchestrates how your apps (api, web, worker) build, test, and run.
