@@ -5,9 +5,9 @@ services:
     container_name: pulsewatch-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: pulsewatch
-      POSTGRES_PASSWORD: pulsewatch_local
-      POSTGRES_DB: pulsewatch
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
