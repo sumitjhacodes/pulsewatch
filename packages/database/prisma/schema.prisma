@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum HttpMethod {
+  GET
+  POST
+  HEAD
+}
+
+enum IncidentStatus {
+  OPEN
+  RESOLVED
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  monitors    Monitor[]
+  statusPages StatusPage[]
+}
+
+model Monitor {
+  id              String     @id @default(cuid())
+  userId          String
+  name            String
+  url             String
+  method          HttpMethod @default(GET)
+  intervalSeconds Int        @default(60)
+  timeoutMs       Int        @default(10000)
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkResults       CheckResult[]
+  incidents          Incident[]
+  statusPageMonitors StatusPageMonitor[]
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model CheckResult {
+  id           String   @id @default(cuid())
+  monitorId    String
+  statusCode   Int?
+  responseTime Int?
+  isSuccessful Boolean
+  errorType    String?
+  errorMessage String?
+  checkedAt    DateTime @default(now())
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId, checkedAt(sort: Desc)])
+}
+
+model Incident {
+  id         String         @id @default(cuid())
+  monitorId  String
+  status     IncidentStatus @default(OPEN)
+  reason     String
+  startedAt  DateTime       @default(now())
+  resolvedAt DateTime?
+
+  monitor          Monitor           @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  notificationLogs NotificationLog[]
+
+  @@index([monitorId, status])
+}
+
+model NotificationLog {
+  id             String         @id @default(cuid())
+  incidentId     String
+  eventType      String
+  deliveryStatus DeliveryStatus @default(PENDING)
+  attemptCount   Int            @default(0)
+  createdAt      DateTime       @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model StatusPage {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  slug        String   @unique
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitors StatusPageMonitor[]
+
+  @@index([userId])
+}
+
+model StatusPageMonitor {
+  statusPageId String
+  monitorId    String
+
+  statusPage StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+  monitor    Monitor    @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@id([statusPageId, monitorId])
+  @@index([monitorId])
+}
